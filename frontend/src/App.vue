@@ -95,10 +95,17 @@
       
       <div class="books-grid">
         <BookCard
-          v-for="book in searchResult.books"
+          v-for="book in displayedBooks"
           :key="book.id"
           :book="book"
         />
+      </div>
+
+      <!-- Button Veure Més -->
+      <div v-if="hasMoreBooks && !showAllBooks" class="more-books-actions">
+        <button @click="showAllBooks = true" class="btn-more-books">
+          Veure més llibres
+        </button>
       </div>
     </div>
 
@@ -122,7 +129,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import BookCard from './components/BookCard.vue'
 
 const searchQuery = ref('')
@@ -134,10 +141,23 @@ const hasSearched = ref(false)
 const errorMessage = ref('')
 const searchResult = ref(null)
 const lastQuery = ref('')
+const showAllBooks = ref(false)
+
+const displayedBooks = computed(() => {
+  if (!searchResult.value || !searchResult.value.books) return []
+  if (showAllBooks.value) return searchResult.value.books
+  return searchResult.value.books.slice(0, 4)
+})
+
+const hasMoreBooks = computed(() => {
+  if (!searchResult.value || !searchResult.value.books) return false
+  return searchResult.value.books.length > 4
+})
 
 const performSearch = async () => {
   if (!searchQuery.value.trim()) return
 
+  showAllBooks.value = false
   isLoading.value = true
   errorMessage.value = ''
   hasSearched.value = true
