@@ -139,6 +139,9 @@ const renderMarkdown = (text) => {
   // Enllaços: [text](url)
   html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
   
+  // Col·lapsar múltiples línies en blanc consecutives en un màxim de 2 salts (1 paràgraf)
+  html = html.replace(/\n{3,}/g, '\n\n')
+
   // Processament de llistes en línies
   const lines = html.split('\n')
   let inList = false
@@ -150,6 +153,10 @@ const renderMarkdown = (text) => {
     if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
       const content = trimmed.substring(2).trim()
       if (!inList) {
+        // Eliminar possible línia en blanc precedent a la llista
+        if (resultLines.length > 0 && resultLines[resultLines.length - 1].trim() === '') {
+          resultLines.pop()
+        }
         resultLines.push('<ul class="chat-list">')
         inList = true
       }
@@ -158,6 +165,8 @@ const renderMarkdown = (text) => {
       if (inList) {
         resultLines.push('</ul>')
         inList = false
+        // Saltar línies en blanc just després del tancament de la llista
+        if (trimmed === '') continue
       }
       resultLines.push(line)
     }
@@ -166,8 +175,10 @@ const renderMarkdown = (text) => {
     resultLines.push('</ul>')
   }
   
-  // Saltos de línia
-  html = resultLines.join('\n').replace(/\n/g, '<br>')
+  // Convertir a HTML: dobles salts → <br>, simples → espai dins de línia
+  html = resultLines.join('\n')
+  html = html.replace(/\n\n/g, '<br>')
+  html = html.replace(/\n/g, ' ')
   return html
 }
 
