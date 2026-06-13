@@ -1,0 +1,20 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+
+# Node modules & build
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# IDEs & System
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

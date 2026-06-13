@@ -295,31 +295,29 @@ body {
 
 /* Grid of Books */
 .books-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem;
-  align-items: start;
+  display: block;
+  column-count: 1;
+  column-gap: 1.25rem;
 }
 
 @media (min-width: 768px) {
   .books-grid {
-    grid-template-columns: repeat(2, 1fr);
-    grid-auto-flow: dense;
-  }
-  .book-card.is-expanded {
-    grid-row: span 2;
+    column-count: 2;
   }
 }
 
 @media (min-width: 1024px) {
   .books-grid {
-    grid-template-columns: repeat(2, 1fr);
-    grid-auto-flow: dense;
+    column-count: 2;
   }
 }
 
 /* Book Card */
 .book-card {
+  display: inline-block;
+  width: 100%;
+  break-inside: avoid;
+  margin-bottom: 1.25rem;
   background: rgba(22, 30, 49, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 16px;
