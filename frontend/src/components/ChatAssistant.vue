@@ -160,7 +160,8 @@ const renderMarkdown = (text) => {
         resultLines.push('<ul class="chat-list">')
         inList = true
       }
-      resultLines.push(`<li>${content}</li>`)
+      resultLines.push(`<li${content.startsWith('📖') ? ' class="list-item-book"' : ''}>${content}</li>`)
+
     } else {
       if (inList) {
         resultLines.push('</ul>')
