@@ -31,20 +31,6 @@
         </div>
 
         <div class="controls-row">
-          <!-- Switches -->
-          <div class="switches-group">
-            <label class="switch-label">
-              <input
-                v-model="enrichDesc"
-                type="checkbox"
-                class="switch-input"
-                :disabled="isLoading"
-              />
-              <span class="switch-slider"></span>
-              <span>Enriquir amb descripció i categoria</span>
-            </label>
-          </div>
-
           <!-- Scope Selector -->
           <div class="scope-selector">
             <label for="scope-select">Àmbit de cerca:</label>
@@ -133,7 +119,6 @@ import { ref, computed } from 'vue'
 import BookCard from './components/BookCard.vue'
 
 const searchQuery = ref('')
-const enrichDesc = ref(false)
 const searchScope = ref(171)
 
 const isLoading = ref(false)
@@ -165,7 +150,7 @@ const performSearch = async () => {
 
   const queryParams = new URLSearchParams({
     q: searchQuery.value,
-    desc: enrichDesc.value,
+    desc: 'false',
     scope: searchScope.value
   })
 

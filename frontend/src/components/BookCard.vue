@@ -1,5 +1,14 @@
 <template>
-  <div class="book-card">
+  <div 
+    class="book-card" 
+    :class="{ 'is-expanded': isCardExpanded }"
+    @click="handleCardClick"
+  >
+    <!-- Indicator icon to click to expand -->
+    <div class="expand-indicator-icon">
+      {{ isCardExpanded ? '▲' : '▼' }}
+    </div>
+
     <div class="book-main-content">
       <!-- Imatge de Portada / Placeholder -->
       <div class="book-cover-wrapper">
@@ -19,34 +28,41 @@
       <!-- Detalls del llibre -->
       <div class="book-details">
         <div class="book-meta">
-          <span v-if="book.category" class="category-badge">{{ book.category }}</span>
+          <span v-if="category" class="category-badge">{{ category }}</span>
+          <span v-else-if="isLoadingDescription" class="category-badge-loader skeleton-pulse"></span>
         </div>
         <h3 class="book-title" :title="book.title">{{ book.title }}</h3>
         <p v-if="book.author" class="book-author">{{ book.author }}</p>
         <p v-if="book.publisher" class="book-publisher">{{ book.publisher }}</p>
 
-        <!-- Descripció amb Toggle -->
-        <div v-if="book.description" class="book-description">
-          <p 
-            class="book-description-text" 
-            :class="{ 'expanded': isDescExpanded }"
-          >
-            {{ book.description }}
-          </p>
-          <button 
-            @click="isDescExpanded = !isDescExpanded" 
-            class="btn-toggle-desc"
-          >
-            <span>{{ isDescExpanded ? 'Veure menys' : 'Llegir descripció sencera' }}</span>
-            <span>{{ isDescExpanded ? '↑' : '↓' }}</span>
-          </button>
+        <!-- Descripció Dinàmica quan està expandit -->
+        <div class="book-description-container" :class="{ 'visible': isCardExpanded }">
+          <div v-if="isLoadingDescription" class="desc-loader">
+            <div class="skeleton-desc-line skeleton-pulse" style="width: 90%;"></div>
+            <div class="skeleton-desc-line skeleton-pulse" style="width: 95%; margin-top: 0.5rem;"></div>
+            <div class="skeleton-desc-line skeleton-pulse" style="width: 60%; margin-top: 0.5rem;"></div>
+          </div>
+          <div v-else-if="descriptionError" class="desc-error">
+            ⚠️ {{ descriptionError }}
+          </div>
+          <div v-else-if="description" class="desc-content">
+            <p class="book-description-text-full">{{ description }}</p>
+          </div>
+          <div v-else-if="isCardExpanded" class="desc-empty">
+            No s'ha trobat cap descripció per a aquest llibre.
+          </div>
+        </div>
+        
+        <!-- Hint to expand when not expanded -->
+        <div v-if="!isCardExpanded" class="expand-hint">
+          Fes clic per veure la descripció de llibres.cat
         </div>
       </div>
     </div>
 
     <!-- Secció d'exemplars / Disponibilitat -->
     <div v-if="book.items && book.items.length" class="book-items-section">
-      <div class="items-header" @click="isItemsExpanded = !isItemsExpanded">
+      <div class="items-header" @click.stop="isItemsExpanded = !isItemsExpanded">
         <div class="items-summary-title">
           <span 
             class="availability-dot" 
@@ -87,7 +103,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 const props = defineProps({
   book: {
@@ -96,8 +112,67 @@ const props = defineProps({
   }
 })
 
-const isDescExpanded = ref(false)
+const isCardExpanded = ref(false)
 const isItemsExpanded = ref(false)
+const isLoadingDescription = ref(false)
+const descriptionError = ref('')
+
+const description = ref(props.book.description)
+const category = ref(props.book.category)
+
+// Reset internal state when book changes (e.g. on new search)
+watch(() => props.book, (newBook) => {
+  description.value = newBook.description
+  category.value = newBook.category
+  isCardExpanded.value = false
+  isItemsExpanded.value = false
+  descriptionError.value = ''
+}, { deep: true })
+
+const handleCardClick = (event) => {
+  // Ignorem el clic si és un botó interactiu o el header d'exemplars
+  if (
+    event.target.closest('button') || 
+    event.target.closest('.items-header') || 
+    event.target.closest('.item-row')
+  ) {
+    return
+  }
+  
+  toggleCardExpand()
+}
+
+const toggleCardExpand = async () => {
+  isCardExpanded.value = !isCardExpanded.value
+  
+  // Si s'expandeix i no s'ha descarregat la descripció prèviament
+  if (isCardExpanded.value && !description.value && !isLoadingDescription.value) {
+    isLoadingDescription.value = true
+    descriptionError.value = ''
+    
+    try {
+      const params = new URLSearchParams({
+        title: props.book.title,
+        author: props.book.author || '',
+        publisher: props.book.publisher || ''
+      })
+      
+      const response = await fetch(`/api/books/${props.book.id}/enrich?${params.toString()}`)
+      if (!response.ok) {
+        throw new Error(`Error en obtenir descripció (${response.status})`)
+      }
+      
+      const data = await response.json()
+      description.value = data.description
+      category.value = data.category
+    } catch (err) {
+      console.error(err)
+      descriptionError.value = "No s'ha pogut obtenir la descripció."
+    } finally {
+      isLoadingDescription.value = false
+    }
+  }
+}
 
 // Comprova si un exemplar és disponible
 const isAvailable = (status) => {

@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from llibres_assist_core.scraper.aladi import AladiScraper, SearchType
-from llibres_assist_core.models.book import SearchResult
+from llibres_assist_core.models.book import SearchResult, Book
+from llibres_assist_core.scraper.llibres_cat import LlibresCatScraper
 
 app = FastAPI(
     title="Llibres Assist API",
@@ -42,6 +43,29 @@ def search_books(
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error durant la cerca: {str(e)}")
+
+@app.get("/api/books/{book_id}/enrich", response_model=Book)
+def enrich_single_book(
+    book_id: str,
+    title: str,
+    author: str | None = None,
+    publisher: str | None = None
+):
+    """
+    Enriqueix un llibre concret amb la descripció i categoria de llibres.cat.
+    """
+    try:
+        dummy_book = Book(
+            id=book_id,
+            title=title,
+            author=author,
+            publisher=publisher
+        )
+        with LlibresCatScraper() as enricher:
+            enriched = enricher.enrich(dummy_book)
+        return enriched
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en enriquiment de llibre: {str(e)}")
 
 @app.get("/api/health")
 def health_check():

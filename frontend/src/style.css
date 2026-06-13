@@ -323,6 +323,7 @@ body {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
 }
 
 .book-card:hover {
@@ -330,6 +331,32 @@ body {
   border-color: rgba(99, 102, 241, 0.2);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4),
               0 0 20px rgba(99, 102, 241, 0.05);
+}
+
+.book-card.is-expanded {
+  background: rgba(26, 35, 57, 0.85);
+  border-color: rgba(99, 102, 241, 0.45);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45),
+              0 0 25px rgba(99, 102, 241, 0.12);
+}
+
+.expand-indicator-icon {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  color: #475569;
+  font-size: 0.65rem;
+  transition: transform 0.3s ease, color 0.2s ease;
+  pointer-events: none;
+}
+
+.book-card:hover .expand-indicator-icon {
+  color: #818cf8;
+}
+
+.book-card.is-expanded .expand-indicator-icon {
+  transform: rotate(180deg);
+  color: #818cf8;
 }
 
 .book-main-content {
@@ -417,6 +444,14 @@ body {
   letter-spacing: 0.025em;
 }
 
+.category-badge-loader {
+  display: inline-block;
+  width: 70px;
+  height: 1.15rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .book-title {
   font-size: 1.15rem;
   font-weight: 700;
@@ -439,43 +474,65 @@ body {
 .book-publisher {
   font-size: 0.82rem;
   color: #64748b;
-  margin: 0 0 0.75rem 0;
+  margin: 0;
 }
 
-.book-description-text {
-  font-size: 0.85rem;
+/* Dynamic Expand Description */
+.book-description-container {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              opacity 0.3s ease, 
+              margin-top 0.3s ease;
+  margin-top: 0;
+}
+
+.book-description-container.visible {
+  max-height: 500px;
+  opacity: 1;
+  margin-top: 0.75rem;
+}
+
+.book-description-text-full {
+  font-size: 0.86rem;
   color: #94a3b8;
   line-height: 1.45;
   margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
-.book-description-text.expanded {
-  display: block;
-  -webkit-line-clamp: unset;
-  overflow: visible;
+.desc-error {
+  color: #f87171;
+  font-size: 0.82rem;
+  font-weight: 500;
 }
 
-.btn-toggle-desc {
-  background: none;
-  border: none;
-  color: #818cf8;
-  font-size: 0.78rem;
+.desc-empty {
+  color: #475569;
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+.skeleton-desc-line {
+  height: 0.75rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+}
+
+/* Click to Expand hint */
+.expand-hint {
+  font-size: 0.72rem;
+  color: #475569;
+  margin-top: auto;
+  padding-top: 0.75rem;
   font-weight: 600;
-  padding: 0;
-  margin-top: 0.3rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  align-self: flex-start;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: color 0.2s ease;
 }
 
-.btn-toggle-desc:hover {
-  color: #a5b4fc;
+.book-card:hover .expand-hint {
+  color: #818cf8;
 }
 
 /* Copies / Items List */
