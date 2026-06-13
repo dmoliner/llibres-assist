@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -5,6 +7,16 @@ from llibres_assist_core.scraper.aladi import AladiScraper, SearchType
 from llibres_assist_core.models.book import SearchResult, Book
 from llibres_assist_core.scraper.llibres_cat import LlibresCatScraper
 from llibres_assist_core.assistant.agent import run_assistant_chat
+
+# Carregar variables del fitxer .env (si existeix)
+load_dotenv()
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise RuntimeError(
+        "La variable d'entorn GEMINI_API_KEY no s'ha trobat. "
+        "Crea un fitxer '.env' al directori backend amb: GEMINI_API_KEY=la_teva_clau"
+    )
 
 app = FastAPI(
     title="Llibres Assist API",
@@ -21,7 +33,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-GEMINI_API_KEY = "AIzaSyACQ7rDac5_dcDBiWCUyWyiR8ty_Xp1_jE"
+
 
 class ChatRequest(BaseModel):
     message: str
