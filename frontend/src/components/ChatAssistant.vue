@@ -38,10 +38,51 @@
         <div class="chat-avatar" v-if="msg.role !== 'user'">🤖</div>
         <div class="chat-avatar user-avatar" v-else>👤</div>
         
-        <div 
-          :class="['chat-bubble', msg.role === 'user' ? 'bubble-user' : 'bubble-assistant']"
-          v-html="renderMarkdown(msg.text)"
-        ></div>
+        <!-- Missatge d'usuari: sempre text pla -->
+        <div v-if="msg.role === 'user'" class="chat-bubble bubble-user" v-html="renderMarkdown(msg.text)"></div>
+        
+        <!-- Missatge de l'assistent: amb o sense targetes de llibres -->
+        <div v-else class="chat-bubble bubble-assistant">
+          <!-- Text introductori (preamble) -->
+          <div v-if="msg.preamble" class="bubble-text" v-html="renderMarkdown(msg.preamble)"></div>
+
+          <!-- Targetes de llibres -->
+          <div v-if="msg.books && msg.books.length > 0" class="chat-book-cards">
+            <div
+              v-for="(book, bi) in (msg.expanded ? msg.books : msg.books.slice(0, 3))"
+              :key="bi"
+              class="chat-book-card"
+            >
+              <div class="chat-book-card-header">
+                <div class="chat-book-card-title-block">
+                  <span class="chat-book-card-title">{{ book.title }}</span>
+                  <span class="chat-book-card-author" v-if="book.author">{{ book.author }}</span>
+                </div>
+                <span :class="['chat-book-avail-badge', book.isAvailable ? 'avail-yes' : 'avail-no']">
+                  {{ book.isAvailable ? '🟢' : '🔴' }} {{ book.availabilityText }}
+                </span>
+              </div>
+              <div v-if="book.locations" class="chat-book-card-locations">
+                📍 {{ book.locations }}
+              </div>
+            </div>
+
+            <!-- Botó Veure més resultats -->
+            <button
+              v-if="!msg.expanded && msg.books.length > 3"
+              @click="msg.expanded = true"
+              class="btn-show-more-books"
+            >
+              Veure {{ msg.books.length - 3 }} resultat{{ msg.books.length - 3 !== 1 ? 's' : '' }} més →
+            </button>
+          </div>
+
+          <!-- Text de tancament (postamble) -->
+          <div v-if="msg.postamble" class="bubble-text bubble-postamble" v-html="renderMarkdown(msg.postamble)"></div>
+
+          <!-- Missatge sense targetes (fallback text pla) -->
+          <div v-if="!msg.books || msg.books.length === 0" v-html="renderMarkdown(msg.text)"></div>
+        </div>
       </div>
 
       <!-- Loading State / Thinking -->
@@ -96,24 +137,129 @@ const isLoading = ref(false)
 const messagesContainer = ref(null)
 const inputField = ref(null)
 
-// Historial per mostrar a la interfície
-const displayMessages = ref([
-  {
-    role: 'model',
-    text: 'Hola! Soc el teu **Assistent Literari** de les biblioteques de la DIBA. \n\nEt puc ajudar a trobar recomanacions de llibres segons les teves preferències o gèneres preferits, i comprovaré directament la seva disponibilitat al catàleg. De què et ve de gust parlar avui?'
+// ── Parser de missatges ─────────────────────────────────────────────────────
+
+/**
+ * Dona format llegible a la part de text d'un element de llista.
+ * Elimina el markdown de negreta/cursiva per mostrar text net.
+ */
+function stripMarkdown(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .trim()
+}
+
+/**
+ * Analitza el text brut de la IA i extreu:
+ * - preamble: text introductor
+ * - books: array d'objectes de llibre estructurats
+ * - postamble: text de cloenda
+ */
+function parseMessageContent(rawText) {
+  const lines = rawText.split('\n')
+  const preambleLines = []
+  const postambleLines = []
+  const books = []
+  let currentBook = null
+  let inBookList = false
+  let listDone = false
+
+  const isListItem = (line) => line.trim().startsWith('- ') || line.trim().startsWith('* ')
+  const getContent = (line) => line.trim().substring(2).trim()
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+
+    if (!inBookList && !listDone) {
+      if (isListItem(line)) {
+        const content = getContent(line)
+        if (content.includes('📖')) {
+          // Inici de la secció de llibres
+          inBookList = true
+          currentBook = parseBookTitle(content)
+        } else {
+          preambleLines.push(line)
+        }
+      } else {
+        preambleLines.push(line)
+      }
+    } else if (inBookList) {
+      if (isListItem(line)) {
+        const content = getContent(line)
+        if (content.includes('📖')) {
+          if (currentBook) books.push(currentBook)
+          currentBook = parseBookTitle(content)
+        } else if (content.includes('🟢') || content.includes('🔴')) {
+          if (currentBook) {
+            const isAvailable = content.includes('🟢')
+            currentBook.isAvailable = isAvailable
+            currentBook.availabilityText = stripMarkdown(
+              content.replace('🟢', '').replace('🔴', '').trim()
+            )
+          }
+        } else if (content.includes('📍')) {
+          if (currentBook) {
+            currentBook.locations = content
+              .replace(/^📍\s*\*?Ubicacions:?\*?\s*/i, '')
+              .replace(/\*/g, '')
+              .trim()
+          }
+        }
+      } else if (trimmed === '') {
+        // Línia en blanc dins la llista → ignorar
+      } else {
+        // Fi de la secció de llibres
+        if (currentBook) { books.push(currentBook); currentBook = null }
+        inBookList = false
+        listDone = true
+        if (trimmed !== '') postambleLines.push(line)
+      }
+    } else {
+      postambleLines.push(line)
+    }
   }
+
+  if (currentBook) books.push(currentBook)
+
+  return {
+    preamble: preambleLines.join('\n').trim(),
+    books,
+    postamble: postambleLines.join('\n').trim()
+  }
+}
+
+function parseBookTitle(content) {
+  // Format: **📖 TITLE** - *Author* o **📖 TITLE** - *Author*
+  const match = content.match(/\*\*📖\s*(.*?)\*\*\s*(?:-\s*\*?(.*?)\*?)?$/)
+  if (match) {
+    return {
+      title: match[1]?.trim() || '',
+      author: match[2]?.replace(/\*/g, '').trim() || '',
+      availabilityText: '',
+      isAvailable: false,
+      locations: ''
+    }
+  }
+  return {
+    title: stripMarkdown(content.replace('📖', '').trim()),
+    author: '',
+    availabilityText: '',
+    isAvailable: false,
+    locations: ''
+  }
+}
+
+// ── Historial de missatges ──────────────────────────────────────────────────
+
+const WELCOME_TEXT = 'Hola! Soc el teu **Assistent Literari** de les biblioteques de la DIBA. \n\nEt puc ajudar a trobar recomanacions de llibres segons les teves preferències o gèneres preferits, i comprovaré directament la seva disponibilitat al catàleg. De què et ve de gust parlar avui?'
+
+const displayMessages = ref([
+  { role: 'model', text: WELCOME_TEXT, books: [], preamble: WELCOME_TEXT, postamble: '', expanded: false }
 ])
 
-// Historial estructurat en format Gemini que intercanviem amb el backend
 const rawHistory = ref([
-  {
-    role: 'model',
-    parts: [
-      {
-        text: 'Hola! Soc el teu **Assistent Literari** de les biblioteques de la DIBA. \n\nEt puc ajudar a trobar recomanacions de llibres segons les teves preferències o gèneres preferits, i comprovaré directament la seva disponibilitat al catàleg. De què et ve de gust parlar avui?'
-      }
-    ]
-  }
+  { role: 'model', parts: [{ text: WELCOME_TEXT }] }
 ])
 
 const suggestions = [
@@ -122,66 +268,57 @@ const suggestions = [
   "Busca novel·les de muntanya i natura"
 ]
 
+// ── Render de Markdown (per text pla sense targetes) ──────────────────────
+
 const renderMarkdown = (text) => {
   if (!text) return ''
-  // Escapar HTML per seguretat
   let html = text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
 
-  // Negrita: **text**
   html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-  
-  // Cursiva: *text*
   html = html.replace(/\*(.*?)\*/g, '<em>$1</em>')
-  
-  // Enllaços: [text](url)
   html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-  
-  // Col·lapsar múltiples línies en blanc consecutives en un màxim de 2 salts (1 paràgraf)
+
+  // Col·lapsar múltiples línies en blanc
   html = html.replace(/\n{3,}/g, '\n\n')
 
-  // Processament de llistes en línies
+  // Processament de llistes
   const lines = html.split('\n')
   let inList = false
   let resultLines = []
-  
+
   for (let line of lines) {
     const trimmed = line.trim()
-    // Identificar línies de llista que comencen amb "- " o "* "
     if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
       const content = trimmed.substring(2).trim()
       if (!inList) {
-        // Eliminar possible línia en blanc precedent a la llista
         if (resultLines.length > 0 && resultLines[resultLines.length - 1].trim() === '') {
           resultLines.pop()
         }
         resultLines.push('<ul class="chat-list">')
         inList = true
       }
-      resultLines.push(`<li${content.startsWith('📖') ? ' class="list-item-book"' : ''}>${content}</li>`)
-
+      resultLines.push(`<li>${content}</li>`)
     } else {
       if (inList) {
         resultLines.push('</ul>')
         inList = false
-        // Saltar línies en blanc just després del tancament de la llista
         if (trimmed === '') continue
       }
       resultLines.push(line)
     }
   }
-  if (inList) {
-    resultLines.push('</ul>')
-  }
-  
-  // Convertir a HTML: dobles salts → <br>, simples → espai dins de línia
+  if (inList) resultLines.push('</ul>')
+
   html = resultLines.join('\n')
   html = html.replace(/\n\n/g, '<br>')
   html = html.replace(/\n/g, ' ')
   return html
 }
+
+// ── Navegació i enviament ──────────────────────────────────────────────────
 
 const scrollToBottom = async () => {
   await nextTick()
@@ -194,19 +331,15 @@ const sendMessage = async () => {
   const query = userInput.value.trim()
   if (!query || isLoading.value) return
 
-  // Afegir missatge de l'usuari
-  displayMessages.value.push({ role: 'user', text: query })
+  displayMessages.value.push({ role: 'user', text: query, books: [], preamble: '', postamble: '', expanded: false })
   userInput.value = ''
   isLoading.value = true
-  
   scrollToBottom()
 
   try {
     const response = await fetch('/api/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message: query,
         history: rawHistory.value,
@@ -220,25 +353,26 @@ const sendMessage = async () => {
     }
 
     const data = await response.json()
-    
-    // Afegir la resposta del model
-    displayMessages.value.push({ role: 'model', text: data.response })
-    
-    // Guardar l'historial estructurat per a la següent crida
+    const parsed = parseMessageContent(data.response)
+
+    displayMessages.value.push({
+      role: 'model',
+      text: data.response,
+      preamble: parsed.preamble,
+      books: parsed.books,
+      postamble: parsed.postamble,
+      expanded: false
+    })
+
     rawHistory.value = data.history
   } catch (err) {
     console.error(err)
-    displayMessages.value.push({
-      role: 'model',
-      text: `⚠️ **Error en connectar amb l'assistent:** ${err.message}. Si us plau, torna-ho a provar en uns instants.`
-    })
+    const errText = `⚠️ **Error en connectar amb l'assistent:** ${err.message}. Si us plau, torna-ho a provar en uns instants.`
+    displayMessages.value.push({ role: 'model', text: errText, books: [], preamble: errText, postamble: '', expanded: false })
   } finally {
     isLoading.value = false
     scrollToBottom()
-    // Retornar focus al input
-    nextTick(() => {
-      if (inputField.value) inputField.value.focus()
-    })
+    nextTick(() => { if (inputField.value) inputField.value.focus() })
   }
 }
 
@@ -247,7 +381,5 @@ const useSuggestion = (text) => {
   sendMessage()
 }
 
-onMounted(() => {
-  scrollToBottom()
-})
+onMounted(scrollToBottom)
 </script>
