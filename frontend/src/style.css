@@ -297,7 +297,7 @@ body {
 .books-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 2rem;
+  gap: 1.25rem;
   align-items: start;
 }
 
