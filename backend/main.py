@@ -1,8 +1,10 @@
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from llibres_assist_core.scraper.aladi import AladiScraper, SearchType
 from llibres_assist_core.models.book import SearchResult, Book
 from llibres_assist_core.scraper.llibres_cat import LlibresCatScraper
+from llibres_assist_core.assistant.agent import run_assistant_chat
 
 app = FastAPI(
     title="Llibres Assist API",
@@ -18,6 +20,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+GEMINI_API_KEY = "AIzaSyACQ7rDac5_dcDBiWCUyWyiR8ty_Xp1_jE"
+
+class ChatRequest(BaseModel):
+    message: str
+    history: list
+    scope: int = 171
 
 @app.get("/api/search", response_model=SearchResult)
 def search_books(
@@ -67,6 +76,30 @@ def enrich_single_book(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error en enriquiment de llibre: {str(e)}")
 
+@app.post("/api/chat")
+def chat_assistant(request: ChatRequest):
+    """
+    Endpoint per interactuar amb l'assistent d'IA.
+    Gestiona recomanacions literàries i cerca automàtica al catàleg de la DIBA.
+    """
+    if not request.message.strip():
+        raise HTTPException(status_code=400, detail="El missatge de l'usuari no pot estar buit.")
+    
+    try:
+        response_text, updated_history = run_assistant_chat(
+            api_key=GEMINI_API_KEY,
+            message=request.message,
+            history=request.history,
+            scope=request.scope
+        )
+        return {
+            "response": response_text,
+            "history": updated_history
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en processar el xat: {str(e)}")
+
 @app.get("/api/health")
 def health_check():
     return {"status": "ok", "service": "llibres-assist-backend"}
+
