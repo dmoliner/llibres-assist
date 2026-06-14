@@ -44,7 +44,7 @@
         <!-- Missatge de l'assistent: amb o sense targetes de llibres -->
         <div v-else class="chat-bubble bubble-assistant">
           <!-- Text introductori (preamble) -->
-          <div v-if="msg.preamble" class="bubble-text" v-html="renderMarkdown(msg.preamble)"></div>
+          <div v-if="msg.books && msg.books.length > 0 && msg.preamble" class="bubble-text" v-html="renderMarkdown(msg.preamble)"></div>
 
           <!-- Targetes de llibres -->
           <div v-if="msg.books && msg.books.length > 0" class="chat-book-cards">
@@ -78,7 +78,7 @@
           </div>
 
           <!-- Text de tancament (postamble) -->
-          <div v-if="msg.postamble" class="bubble-text bubble-postamble" v-html="renderMarkdown(msg.postamble)"></div>
+          <div v-if="msg.books && msg.books.length > 0 && msg.postamble" class="bubble-text bubble-postamble" v-html="renderMarkdown(msg.postamble)"></div>
 
           <!-- Missatge sense targetes (fallback text pla) -->
           <div v-if="!msg.books || msg.books.length === 0" v-html="renderMarkdown(msg.text)"></div>
