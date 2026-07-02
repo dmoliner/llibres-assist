@@ -9,6 +9,29 @@
           <p class="status-online">En línia • Cerca intel·ligent activa</p>
         </div>
       </div>
+      
+      <!-- Three vertical dots menu -->
+      <div class="header-menu-container" ref="chatMenuRef">
+        <button class="btn-header-menu" @click.stop="isMenuOpen = !isMenuOpen" aria-label="Menú">
+          ⋮
+        </button>
+        <transition name="fade-slide">
+          <div v-if="isMenuOpen" class="header-dropdown-menu">
+            <button 
+              class="dropdown-item" 
+              @click="selectTab('search')"
+            >
+              <span class="dropdown-icon">🔍</span> Tuva Clàssic
+            </button>
+            <button 
+              class="dropdown-item active" 
+              disabled
+            >
+              <span class="dropdown-icon">🤖</span> Tuva IA
+            </button>
+          </div>
+        </transition>
+      </div>
     </div>
 
     <!-- Message Area -->
@@ -112,13 +135,29 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+
+const emit = defineEmits(['change-tab'])
 
 const userInput = ref('')
 const chatScope = ref(171)
 const isLoading = ref(false)
 const messagesContainer = ref(null)
 const inputField = ref(null)
+
+const isMenuOpen = ref(false)
+const chatMenuRef = ref(null)
+
+const selectTab = (tab) => {
+  isMenuOpen.value = false
+  emit('change-tab', tab)
+}
+
+const handleClickOutside = (event) => {
+  if (chatMenuRef.value && !chatMenuRef.value.contains(event.target)) {
+    isMenuOpen.value = false
+  }
+}
 
 // ── Parser de missatges ─────────────────────────────────────────────────────
 
@@ -369,5 +408,12 @@ const useSuggestion = (text) => {
   sendMessage()
 }
 
-onMounted(scrollToBottom)
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+  scrollToBottom()
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>

@@ -1,32 +1,40 @@
 <template>
   <div class="app-container">
-    <!-- Header -->
-    <header class="app-header">
-      <div class="app-title-group">
-        <span class="logo-icon">📚</span>
-        <h1>Tuva l'assistent</h1>
-      </div>
-      <p class="app-subtitle">Cerca llibres a les biblioteques municipals i enriqueix-los amb llibres.cat</p>
-    </header>
-
-    <!-- Tab Selection -->
-    <div class="tabs-navigation">
-      <button 
-        :class="['tab-btn', activeTab === 'search' ? 'tab-active' : '']" 
-        @click="activeTab = 'search'"
-      >
-        <span class="tab-icon">🔍</span> Tuva Clàssic
-      </button>
-      <button 
-        :class="['tab-btn', activeTab === 'chat' ? 'tab-active' : '']" 
-        @click="activeTab = 'chat'"
-      >
-        <span class="tab-icon">🤖</span> Tuva IA
-      </button>
-    </div>
-
     <!-- Classic Search Tab Content -->
     <div v-if="activeTab === 'search'">
+      <!-- Search Header -->
+      <div class="app-header-unified search-header">
+        <div class="header-info">
+          <span class="header-logo-icon">🔍</span>
+          <div>
+            <h2>Tuva Clàssic</h2>
+            <p class="header-subtitle">Cerca llibres a les biblioteques municipals</p>
+          </div>
+        </div>
+        
+        <!-- Three vertical dots menu -->
+        <div class="header-menu-container" ref="searchMenuRef">
+          <button class="btn-header-menu" @click.stop="isMenuOpen = !isMenuOpen" aria-label="Menú">
+            ⋮
+          </button>
+          <transition name="fade-slide">
+            <div v-if="isMenuOpen" class="header-dropdown-menu">
+              <button 
+                class="dropdown-item active" 
+                disabled
+              >
+                <span class="dropdown-icon">🔍</span> Tuva Clàssic
+              </button>
+              <button 
+                class="dropdown-item" 
+                @click="activeTab = 'chat'; isMenuOpen = false"
+              >
+                <span class="dropdown-icon">🤖</span> Tuva IA
+              </button>
+            </div>
+          </transition>
+        </div>
+      </div>
       <!-- Search Form -->
       <div class="search-card">
         <form @submit.prevent="performSearch">
@@ -133,17 +141,33 @@
 
     <!-- AI Assistant Tab Content -->
     <div v-else-if="activeTab === 'chat'">
-      <ChatAssistant />
+      <ChatAssistant @change-tab="activeTab = $event" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import BookCard from './components/BookCard.vue'
 import ChatAssistant from './components/ChatAssistant.vue'
 
 const activeTab = ref('search')
+const isMenuOpen = ref(false)
+const searchMenuRef = ref(null)
+
+const handleClickOutside = (event) => {
+  if (searchMenuRef.value && !searchMenuRef.value.contains(event.target)) {
+    isMenuOpen.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 const searchQuery = ref('')
 const searchScope = ref(171)
 
