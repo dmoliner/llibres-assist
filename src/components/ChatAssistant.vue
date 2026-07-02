@@ -1,30 +1,13 @@
 <template>
   <div class="chat-assistant-container">
-    <!-- Chat Header with Scope Selector -->
+    <!-- Chat Header -->
     <div class="chat-header">
       <div class="chat-header-info">
         <span class="assistant-avatar">🤖</span>
         <div>
-          <h3>Assistent Literari d'IA</h3>
+          <h3>Tuva IA</h3>
           <p class="status-online">En línia • Cerca intel·ligent activa</p>
         </div>
-      </div>
-      
-      <div class="chat-scope-selector">
-        <label for="chat-scope-select">Àmbit de l'assistent:</label>
-        <select
-          id="chat-scope-select"
-          v-model="chatScope"
-          class="select-custom select-chat"
-          :disabled="isLoading"
-        >
-          <option :value="171">Tot el catàleg (DIBA)</option>
-          <option :value="95">Barcelona Ciutat</option>
-          <option :value="120">L'Hospitalet de Llobregat</option>
-          <option :value="15">Badalona</option>
-          <option :value="148">Terrassa</option>
-          <option :value="140">Sabadell</option>
-        </select>
       </div>
     </div>
 
@@ -252,7 +235,7 @@ function parseBookTitle(content) {
 
 // ── Historial de missatges ──────────────────────────────────────────────────
 
-const WELCOME_TEXT = 'Hola! Soc el teu **Assistent Literari** de les biblioteques de la DIBA. \n\nEt puc ajudar a trobar recomanacions de llibres segons les teves preferències o gèneres preferits, i comprovaré directament la seva disponibilitat al catàleg. De què et ve de gust parlar avui?'
+const WELCOME_TEXT = 'Hola! Soc la **Tuva IA**, l\'assistent de les biblioteques de la DIBA. \n\nEt puc ajudar a trobar recomanacions de llibres segons les teves preferències o gèneres preferits, i comprovaré directament la seva disponibilitat al catàleg. De què et ve de gust parlar avui?'
 
 const displayMessages = ref([
   { role: 'model', text: WELCOME_TEXT, books: [], preamble: WELCOME_TEXT, postamble: '', expanded: false }
@@ -325,6 +308,11 @@ const scrollToBottom = async () => {
   if (messagesContainer.value) {
     messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
   }
+  // Desplaça la finestra de la pàgina a sota per assegurar que el quadre de text és visible
+  window.scrollTo({
+    top: document.documentElement.scrollHeight || document.body.scrollHeight,
+    behavior: 'smooth'
+  })
 }
 
 const sendMessage = async () => {
