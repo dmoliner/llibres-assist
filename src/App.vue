@@ -4,7 +4,7 @@
     <header class="app-header">
       <div class="app-title-group">
         <span class="logo-icon">📚</span>
-        <h1>Llibres Assist</h1>
+        <h1>Tuva l'assistent</h1>
       </div>
       <p class="app-subtitle">Cerca llibres a les biblioteques municipals i enriqueix-los amb llibres.cat</p>
     </header>
@@ -15,13 +15,13 @@
         :class="['tab-btn', activeTab === 'search' ? 'tab-active' : '']" 
         @click="activeTab = 'search'"
       >
-        <span class="tab-icon">🔍</span> Cercador Clàssic
+        <span class="tab-icon">🔍</span> Tuva Clàssic
       </button>
       <button 
         :class="['tab-btn', activeTab === 'chat' ? 'tab-active' : '']" 
         @click="activeTab = 'chat'"
       >
-        <span class="tab-icon">🤖</span> Assistent IA
+        <span class="tab-icon">🤖</span> Tuva IA
       </button>
     </div>
 
