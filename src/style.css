@@ -882,6 +882,8 @@ body {
   padding: 1.25rem 1.5rem;
   background: rgba(10, 15, 30, 0.6);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  position: relative;
+  z-index: 10;
 }
 
 .chat-header-info {
@@ -1469,6 +1471,8 @@ body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
+  position: relative;
+  z-index: 10;
 }
 
 .search-header {
