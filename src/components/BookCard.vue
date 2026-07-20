@@ -157,7 +157,8 @@ const toggleCardExpand = async () => {
         publisher: props.book.publisher || ''
       })
       
-      const response = await fetch(`/api/books/${props.book.id}/enrich?${params.toString()}`)
+      const apiBase = import.meta.env.VITE_API_URL || ''
+      const response = await fetch(`${apiBase}/api/books/${props.book.id}/enrich?${params.toString()}`)
       if (!response.ok) {
         throw new Error(`Error en obtenir descripció (${response.status})`)
       }

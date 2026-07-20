@@ -205,7 +205,8 @@ const performSearch = async () => {
   })
 
   try {
-    const response = await fetch(`/api/search?${queryParams.toString()}`)
+    const apiBase = import.meta.env.VITE_API_URL || ''
+    const response = await fetch(`${apiBase}/api/search?${queryParams.toString()}`)
     
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}))
