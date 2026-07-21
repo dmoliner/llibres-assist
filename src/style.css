@@ -1169,6 +1169,18 @@ body {
   border-radius: 99px;
   white-space: nowrap;
   margin-top: 0.1rem;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.chat-book-avail-badge:hover {
+  filter: brightness(1.2);
+  transform: translateY(-0.5px);
+}
+
+.chat-book-avail-badge:active {
+  transform: translateY(0px);
 }
 
 .chat-book-avail-badge.avail-yes {
