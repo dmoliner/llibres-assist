@@ -1191,6 +1191,25 @@ body {
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+.btn-toggle-locations {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-left: 0.35rem;
+  color: #818cf8;
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+  display: inline-block;
+}
+
+.btn-toggle-locations:hover {
+  color: #a5b4fc;
+  text-decoration: none;
+}
+
 /* Botó "Veure més resultats" dins el xat */
 .btn-show-more-books {
   align-self: flex-start;

@@ -69,7 +69,17 @@
                 </span>
               </div>
               <div v-if="book.locations" class="chat-book-card-locations">
-                📍 {{ book.locations }}
+                📍 
+                <span class="locations-text">
+                  {{ getDisplayedLocations(book) }}
+                </span>
+                <button 
+                  v-if="hasMoreLocations(book)" 
+                  class="btn-toggle-locations"
+                  @click.stop="book.expandedLocations = !book.expandedLocations"
+                >
+                  {{ book.expandedLocations ? 'Amagar' : `+${getMoreLocationsCount(book)} biblioteques` }}
+                </button>
               </div>
             </div>
 
@@ -260,7 +270,8 @@ function parseBookTitle(content) {
       author: match[2]?.replace(/\*/g, '').trim() || '',
       availabilityText: '',
       isAvailable: false,
-      locations: ''
+      locations: '',
+      expandedLocations: false
     }
   }
   return {
@@ -268,7 +279,8 @@ function parseBookTitle(content) {
     author: '',
     availabilityText: '',
     isAvailable: false,
-    locations: ''
+    locations: '',
+    expandedLocations: false
   }
 }
 
@@ -402,6 +414,28 @@ const sendMessage = async () => {
     scrollToBottom()
     nextTick(() => { if (inputField.value) inputField.value.focus() })
   }
+}
+
+const getLocationsArray = (locationsStr) => {
+  if (!locationsStr) return []
+  return locationsStr.split(',').map(l => l.trim()).filter(Boolean)
+}
+
+const hasMoreLocations = (book) => {
+  return getLocationsArray(book.locations).length > 2
+}
+
+const getMoreLocationsCount = (book) => {
+  const arr = getLocationsArray(book.locations)
+  return Math.max(0, arr.length - 2)
+}
+
+const getDisplayedLocations = (book) => {
+  const arr = getLocationsArray(book.locations)
+  if (book.expandedLocations || arr.length <= 2) {
+    return book.locations
+  }
+  return arr.slice(0, 2).join(', ') + '...'
 }
 
 const useSuggestion = (text) => {
