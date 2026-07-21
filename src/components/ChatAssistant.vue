@@ -58,22 +58,44 @@
               v-for="(book, bi) in (msg.expanded ? msg.books : msg.books.slice(0, 3))"
               :key="bi"
               class="chat-book-card"
+              :class="{ 'summary-expanded': book.expandedSummary }"
+              @click="book.expandedSummary = !book.expandedSummary"
             >
-              <div class="chat-book-card-header">
-                <div class="chat-book-card-title-block">
-                  <span class="chat-book-card-title">{{ book.title }}</span>
-                  <span class="chat-book-card-author" v-if="book.author">{{ book.author }}</span>
+              <div class="chat-book-card-content">
+                <!-- Portada del llibre -->
+                <div class="chat-book-cover" v-if="book.coverUrl && book.coverUrl !== 'buit'">
+                  <img :src="book.coverUrl" alt="Portada" />
                 </div>
-                <span 
-                  :class="['chat-book-avail-badge', book.isAvailable ? 'avail-yes' : 'avail-no']"
-                  @click.stop="book.expandedLocations = !book.expandedLocations"
-                  title="Fes clic per veure les ubicacions"
-                >
-                  {{ book.isAvailable ? '🟢' : '🔴' }} {{ book.availabilityText }}
-                </span>
+                <div class="chat-book-cover-placeholder" v-else>
+                  📖
+                </div>
+
+                <!-- Detalls del llibre -->
+                <div class="chat-book-details">
+                  <div class="chat-book-card-header">
+                    <div class="chat-book-card-title-block">
+                      <span class="chat-book-card-title">{{ book.title }}</span>
+                      <span class="chat-book-card-author" v-if="book.author">{{ book.author }}</span>
+                    </div>
+                    <span 
+                      :class="['chat-book-avail-badge', book.isAvailable ? 'avail-yes' : 'avail-no']"
+                      @click.stop="book.expandedLocations = !book.expandedLocations"
+                      title="Fes clic per veure les ubicacions"
+                    >
+                      {{ book.isAvailable ? '🟢' : '🔴' }} {{ book.availabilityText }}
+                    </span>
+                  </div>
+                  
+                  <!-- Resum de 3 línies / Complet -->
+                  <p class="chat-book-summary" v-if="book.summary">
+                    {{ book.summary }}
+                  </p>
+                </div>
               </div>
+
+              <!-- Llista de localitzacions -->
               <transition name="fade-slide">
-                <div v-if="book.locations && book.expandedLocations" class="chat-book-card-locations">
+                <div v-if="book.locations && book.expandedLocations" class="chat-book-card-locations" @click.stop>
                   📍 {{ book.locations }}
                 </div>
               </transition>
@@ -233,6 +255,20 @@ function parseMessageContent(rawText) {
               .replace(/\*/g, '')
               .trim()
           }
+        } else if (content.includes('📝')) {
+          if (currentBook) {
+            currentBook.summary = content
+              .replace(/^📝\s*\*?Resum:?\*?\s*/i, '')
+              .replace(/\*/g, '')
+              .trim()
+          }
+        } else if (content.includes('🖼️')) {
+          if (currentBook) {
+            currentBook.coverUrl = content
+              .replace(/^🖼️\s*\*?Imatge:?\*?\s*/i, '')
+              .replace(/\*/g, '')
+              .trim()
+          }
         }
       } else if (trimmed === '') {
         // Línia en blanc dins la llista → ignorar
@@ -267,7 +303,10 @@ function parseBookTitle(content) {
       availabilityText: '',
       isAvailable: false,
       locations: '',
-      expandedLocations: false
+      summary: '',
+      coverUrl: '',
+      expandedLocations: false,
+      expandedSummary: false
     }
   }
   return {
@@ -276,7 +315,10 @@ function parseBookTitle(content) {
     availabilityText: '',
     isAvailable: false,
     locations: '',
-    expandedLocations: false
+    summary: '',
+    coverUrl: '',
+    expandedLocations: false,
+    expandedSummary: false
   }
 }
 
