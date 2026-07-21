@@ -62,9 +62,8 @@
               @click="book.expandedSummary = !book.expandedSummary"
             >
               <div class="chat-book-card-content">
-                <!-- Portada del llibre -->
                 <div class="chat-book-cover" v-if="book.coverUrl && book.coverUrl !== 'buit'">
-                  <img :src="book.coverUrl" alt="Portada" />
+                  <img :src="book.coverUrl" alt="Portada" @error="book.coverUrl = 'buit'" />
                 </div>
                 <div class="chat-book-cover-placeholder" v-else>
                   📖
